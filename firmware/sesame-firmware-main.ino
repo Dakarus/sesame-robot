@@ -278,10 +278,40 @@ void handleGetSettings() {
 }
 
 void handleSetSettings() {
-  if (server.hasArg("frameDelay")) frameDelay = server.arg("frameDelay").toInt();
-  if (server.hasArg("walkCycles")) walkCycles = server.arg("walkCycles").toInt();
-  if (server.hasArg("motorCurrentDelay")) motorCurrentDelay = server.arg("motorCurrentDelay").toInt();
-  if (server.hasArg("faceFps")) faceFps = (int)max(1L, server.arg("faceFps").toInt());
+  auto parseInt = [](const char* key, int minValue, int maxValue, int& result) -> bool {
+    if (!server.hasArg(key)) return true;
+
+    String input = server.arg(key);
+    char* end = nullptr;
+    long value = strtol(input.c_str(), &end, 10);
+
+    if (end == input.c_str() || *end != '\0' ||
+        value < minValue || value > maxValue) {
+      return false;
+    }
+
+    result = static_cast<int>(value);
+    return true;
+  };
+
+  int newFrameDelay = frameDelay;
+  int newWalkCycles = walkCycles;
+  int newMotorCurrentDelay = motorCurrentDelay;
+  int newFaceFps = faceFps;
+
+  if (!parseInt("frameDelay", 1, 1000, newFrameDelay) ||
+      !parseInt("walkCycles", 1, 50, newWalkCycles) ||
+      !parseInt("motorCurrentDelay", 0, 500, newMotorCurrentDelay) ||
+      !parseInt("faceFps", 1, 60, newFaceFps)) {
+    server.send(400, "text/plain", "Invalid settings");
+    return;
+  }
+
+  frameDelay = newFrameDelay;
+  walkCycles = newWalkCycles;
+  motorCurrentDelay = newMotorCurrentDelay;
+  faceFps = newFaceFps;
+
   server.send(200, "text/plain", "OK");
 }
 
